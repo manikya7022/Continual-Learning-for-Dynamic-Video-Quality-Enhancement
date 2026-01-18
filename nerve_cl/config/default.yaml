@@ -1,0 +1,253 @@
+# NERVE-CL Default Configuration
+# ================================
+
+# Project Settings
+project:
+  name: "nerve-cl"
+  version: "0.1.0"
+  seed: 42
+  device: "cuda"  # cuda, cpu, mps
+
+# Model Architecture
+model:
+  # Frame Recovery
+  frame_recovery:
+    enabled: true
+    encoder_channels: [64, 128, 256]
+    temporal_window: 3  # frames before and after
+    use_attention: true
+  
+  # Super Resolution
+  super_resolution:
+    enabled: true
+    scale_factor: 2  # 2x, 3x, or 4x
+    num_residual_blocks: 8
+    num_features: 64
+    use_temporal: true
+    temporal_window: 2
+  
+  # Combined Enhancement
+  enhancement:
+    mode: "sequential"  # sequential, parallel
+    upscale_first: false
+
+# Training Configuration
+training:
+  # Basic settings
+  epochs: 100
+  batch_size: 16
+  learning_rate: 1.0e-4
+  weight_decay: 1.0e-5
+  
+  # Optimizer
+  optimizer: "adamw"
+  scheduler: "cosine"
+  warmup_epochs: 5
+  
+  # Loss weights
+  losses:
+    pixel_loss: 1.0      # L1 loss
+    perceptual_loss: 0.1 # VGG-based
+    temporal_loss: 0.05  # Temporal consistency
+    
+  # Augmentation
+  augmentation:
+    random_crop: true
+    crop_size: 256
+    random_flip: true
+    random_rotate: false
+    color_jitter: 0.1
+
+# Continual Learning
+continual:
+  enabled: true
+  strategy: "ewc_replay"  # ewc, replay, maml, ewc_replay
+  
+  # Episodic Memory
+  memory:
+    capacity: 1000
+    strategy: "reservoir"  # reservoir, fifo, stratified
+    
+  # Elastic Weight Consolidation
+  ewc:
+    lambda: 5000
+    mode: "online"  # online, separate
+    decay: 0.999
+    
+  # Meta-Learning (MAML)
+  maml:
+    inner_lr: 0.01
+    inner_steps: 5
+    first_order: true
+    
+  # Knowledge Distillation
+  distillation:
+    enabled: true
+    temperature: 4.0
+    alpha: 0.5  # balance between CE and KD loss
+
+# Federated Learning
+federated:
+  enabled: true
+  num_clients: 100
+  clients_per_round: 10
+  num_rounds: 100
+  local_epochs: 5
+  
+  # Aggregation
+  aggregation: "fedavg"  # fedavg, fedprox, scaffold
+  fedprox_mu: 0.01
+  
+  # Privacy
+  privacy:
+    enabled: true
+    mechanism: "dp-sgd"
+    epsilon: 8.0
+    delta: 1.0e-5
+    max_grad_norm: 1.0
+    
+  # User Clustering
+  clustering:
+    enabled: true
+    num_clusters: 8
+    method: "kmeans"
+    update_frequency: 10  # rounds
+
+# Adaptive Bitrate (ABR)
+abr:
+  enabled: true
+  algorithm: "ppo"  # dqn, ppo, a2c
+  
+  # Quality Ladder (bitrates in kbps)
+  quality_ladder:
+    - resolution: 360
+      bitrate: 365
+    - resolution: 480
+      bitrate: 750
+    - resolution: 720
+      bitrate: 1500
+    - resolution: 1080
+      bitrate: 3000
+    - resolution: 1440
+      bitrate: 6000
+  
+  # Enhancement factors
+  upscale_factors: [1.0, 1.5, 2.0, 3.0]
+  
+  # RL Agent
+  agent:
+    hidden_dims: [256, 256]
+    learning_rate: 3.0e-4
+    gamma: 0.99
+    gae_lambda: 0.95
+    clip_ratio: 0.2
+    value_coef: 0.5
+    entropy_coef: 0.01
+    
+  # Reward weights
+  reward:
+    quality_weight: 1.0
+    rebuffer_weight: 10.0
+    smoothness_weight: 0.5
+    battery_weight: 0.3
+
+# Data Configuration
+data:
+  # Video settings
+  video:
+    fps: 30
+    segment_length: 4  # seconds
+    chunk_size: 16     # frames per batch
+    
+  # Datasets
+  datasets:
+    train:
+      - name: "youtube-8m"
+        path: "/data/youtube-8m"
+        split: "train"
+      - name: "kinetics-600"
+        path: "/data/kinetics-600"
+        split: "train"
+    val:
+      - name: "uvg"
+        path: "/data/uvg"
+    test:
+      - name: "reds"
+        path: "/data/reds"
+        
+  # Synthetic degradation
+  degradation:
+    compression:
+      enabled: true
+      crf_range: [23, 35]
+      codec: "h264"
+    noise:
+      enabled: true
+      sigma_range: [5, 25]
+    blur:
+      enabled: true
+      kernel_range: [3, 7]
+    downscale:
+      enabled: true
+      scale_range: [0.25, 0.5]
+
+# Metrics
+metrics:
+  quality:
+    - psnr
+    - ssim
+    - vmaf
+    - lpips
+  temporal:
+    - tOF  # temporal optical flow
+    - tLP  # temporal LPIPS
+  system:
+    - latency
+    - throughput
+    - power
+
+# MLOps Configuration
+mlops:
+  # Experiment Tracking
+  tracking:
+    backend: "mlflow"  # mlflow, wandb
+    experiment_name: "nerve-cl"
+    log_interval: 100
+    
+  # Model Registry
+  registry:
+    enabled: true
+    path: "/models/registry"
+    
+  # Monitoring
+  monitoring:
+    enabled: true
+    prometheus_port: 8000
+    
+  # A/B Testing
+  ab_testing:
+    enabled: true
+    canary_percentage: 5
+    evaluation_period: 24  # hours
+    
+  # Drift Detection
+  drift_detection:
+    enabled: true
+    method: "mmd"  # mmd, ks, psi
+    threshold: 0.05
+    window_size: 1000
+
+# Logging
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  save_dir: "logs"
+  tensorboard: true
+
+# Checkpointing
+checkpoint:
+  save_dir: "checkpoints"
+  save_frequency: 5  # epochs
+  keep_last_n: 3
+  save_best: true
+  best_metric: "vmaf"
